@@ -1,7 +1,6 @@
 import streamlit as st
 from streamlit_chat import message
 from langchain_core.messages import AIMessage, HumanMessage
-# from backend_test import get_text_chunks, create_vectorstore, create_conversation_chain, extract_text_from_pdf
 from backend.backend import get_text_chunks, create_conversation_chain, create_vectorstore, extract_text_from_pdf
 
 
