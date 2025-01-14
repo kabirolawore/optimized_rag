@@ -2,32 +2,86 @@ import streamlit as st
 from streamlit_chat import message
 from langchain_core.messages import AIMessage, HumanMessage
 from backend.backend import get_text_chunks, create_conversation_chain, create_vectorstore, extract_text_from_pdf
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
+
+# Sample FAQ Data
+faq_data = {
+    "What courses are available?": "You can find a list of courses on our university website.",
+    "What are the admission requirements?": "Admission requirements vary by course. Check the admissions page.",
+    "How can I contact the admissions office?": "You can email admissions@university.edu or call +123456789."
+}
+
+# Vectorize FAQ Questions
+faq_questions = list(faq_data.keys())
+vectorizer = TfidfVectorizer()
+faq_embeddings = vectorizer.fit_transform(faq_questions)
+
+
+# Training data for the classifier
+questions = [
+    "What courses are available?",
+    "What is the fee structure?",
+    "How can I apply?",
+    "Tell me about research opportunities.",
+    "What are the admission requirements?",
+    "How can I contact the admissions office?"
+]
+labels = [1, 0, 0, 0, 1, 1]  # 1 = FAQ, 0 = Non-FAQ
+
+# Train the classifier
+question_embeddings = vectorizer.transform(questions)
+classifier = LogisticRegression()
+classifier.fit(question_embeddings, labels)
+
+
+
+
+
+
+
+
+# def handle_user_question(user_question):
+#     response = st.session_state.conversation({"input": user_question, "chat_history": []})
+
+
+#     st.session_state.chat_history.extend(
+#         [
+#             HumanMessage(content=response['input']),
+#             AIMessage(content=response['answer']),
+#         ]
+#     )
+
+
+#     # print('st.session_state.chat_history', st.session_state.chat_history)
+
+#     # Display the chat messages
+#     for i, msg in enumerate(st.session_state.chat_history):
+#         if i % 2 == 0:
+#             message(msg.content, is_user=True, key=str(i) + '_user', avatar_style="initials", seed="Kavita")
+#         else:
+#             message(msg.content, is_user=False, key=str(i), avatar_style="initials", seed="AI",)
 
 
 
 def handle_user_question(user_question):
-    response = st.session_state.conversation({"input": user_question, "chat_history": []})
+    # Classify the user's question
+    user_question_embedding = vectorizer.transform([user_question])
+    is_faq = classifier.predict(user_question_embedding)[0]
+
+    if is_faq:
+        # FAQ handling
+        similarities = cosine_similarity(user_question_embedding, faq_embeddings).flatten()
 
 
-    st.session_state.chat_history.extend(
-        [
-            HumanMessage(content=response['input']),
-            AIMessage(content=response['answer']),
-        ]
-    )
-
-
-
-    print('st.session_state.chat_history', st.session_state.chat_history)
-
-    # Display the chat messages
     for i, msg in enumerate(st.session_state.chat_history):
         if i % 2 == 0:
             message(msg.content, is_user=True, key=str(i) + '_user', avatar_style="initials", seed="Kavita")
         else:
             message(msg.content, is_user=False, key=str(i), avatar_style="initials", seed="AI",)
-
 
 
 
