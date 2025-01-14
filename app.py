@@ -12,7 +12,7 @@ import numpy as np
 faq_data = {
     "What courses are available?": "You can find a list of courses on our university website.",
     "What are the admission requirements?": "Admission requirements vary by course. Check the admissions page.",
-    "How can I contact the admissions office?": "You can email admissions@university.edu or call +123456789."
+    "How can I contact the admissions office?": "You can email admissions@university.edu or call +123456789.",
 }
 
 # Vectorize FAQ Questions
@@ -36,12 +36,6 @@ labels = [1, 0, 0, 0, 1, 1]  # 1 = FAQ, 0 = Non-FAQ
 question_embeddings = vectorizer.transform(questions)
 classifier = LogisticRegression()
 classifier.fit(question_embeddings, labels)
-
-
-
-
-
-
 
 
 # def handle_user_question(user_question):
@@ -75,7 +69,30 @@ def handle_user_question(user_question):
     if is_faq:
         # FAQ handling
         similarities = cosine_similarity(user_question_embedding, faq_embeddings).flatten()
+        best_match_index = np.argmax(similarities)
+        best_match_score = similarities[best_match_index]
 
+        if best_match_score > 0.7:
+            response_text = faq_data[faq_questions[best_match_index]]
+        else:
+            # response_text = "I couldn't find a matching FAQ. Please provide more details."
+            response = st.session_state.conversation({"input": user_question, "chat_history": []})
+            response_text = response['answer']
+
+    else:
+        # Non-FAQ handling using RAG pipeline
+        response = st.session_state.conversation({"input": user_question, "chat_history": []})
+        response_text = response['answer']
+        
+    # Update chat history for non-FAQ
+    st.session_state.chat_history.extend(
+        [
+            HumanMessage(content=user_question),
+            AIMessage(content=response_text),
+        ]
+    )
+
+    # print('st.session_state.chat_history', st.session_state.chat_history)
 
     for i, msg in enumerate(st.session_state.chat_history):
         if i % 2 == 0:
