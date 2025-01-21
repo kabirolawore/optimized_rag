@@ -9,75 +9,6 @@ import numpy as np
 import pandas as pd
 
 
-# # Sample FAQ Data
-# faq_data = {
-#     "What courses are available?": "You can find a list of courses on our university website.",
-#     "What are the admission requirements?": "Admission requirements vary by course. Check the admissions page.",
-#     "How can I contact the admissions office?": "You can email admissions@university.edu or call +123456789.",
-# }
-
-
-# # Vectorize FAQ Questions
-# faq_questions = list(faq_data.keys())
-# vectorizer = TfidfVectorizer()
-# faq_embeddings = vectorizer.fit_transform(faq_questions)
-
-
-# # Training data for the classifier
-# questions = [
-#     "What courses are available?",
-#     "What is the fee structure?",
-#     "How can I apply?",
-#     "Tell me about research opportunities.",
-#     "What are the admission requirements?",
-#     "How can I contact the admissions office?"
-# ]
-# labels = [1, 0, 0, 0, 1, 1]  # 1 = FAQ, 0 = Non-FAQ
-
-# # Train the classifier
-# question_embeddings = vectorizer.transform(questions)
-# classifier = LogisticRegression()
-# classifier.fit(question_embeddings, labels)
-
-
-# def handle_user_question(user_question):
-#     # Classify the user's question
-#     user_question_embedding = vectorizer.transform([user_question])
-#     is_faq = classifier.predict(user_question_embedding)[0]
-
-#     if is_faq:
-#         # FAQ handling
-#         similarities = cosine_similarity(user_question_embedding, faq_embeddings).flatten()
-#         best_match_index = np.argmax(similarities)
-#         best_match_score = similarities[best_match_index]
-
-#         if best_match_score > 0.8:
-#             response_text = faq_data[faq_questions[best_match_index]]
-#         else:
-#             # response_text = "I couldn't find a matching FAQ. Please provide more details."
-#             response = st.session_state.conversation({"input": user_question, "chat_history": []})
-#             response_text = response['answer']
-
-#     else:
-#         # Non-FAQ handling using RAG pipeline
-#         response = st.session_state.conversation({"input": user_question, "chat_history": []})
-#         response_text = response['answer']
-        
-#     # Update chat history for Ques and Ans
-#     st.session_state.chat_history.extend(
-#         [
-#             HumanMessage(content=user_question),
-#             AIMessage(content=response_text),
-#         ]
-#     )
-
-#     print('st.session_state.chat_history', st.session_state.chat_history)
-
-#     for i, msg in enumerate(st.session_state.chat_history):
-#         if i % 2 == 0:
-#             message(msg.content, is_user=True, key=str(i) + '_user', avatar_style="initials", seed="Kavita")
-#         else:
-#             message(msg.content, is_user=False, key=str(i), avatar_style="initials", seed="AI",)
 
 
 # Load the Excel file into a DataFrame
@@ -187,7 +118,6 @@ def main():
 
                 # create conversation chain
                 st.session_state.conversation = create_conversation_chain(vectorstore)
-
 
             st.success('Processed successfully')
 
