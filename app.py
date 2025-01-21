@@ -6,53 +6,73 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+import pandas as pd
 
 
-# Sample FAQ Data
-faq_data = {
-    "What courses are available?": "You can find a list of courses on our university website.",
-    "What are the admission requirements?": "Admission requirements vary by course. Check the admissions page.",
-    "How can I contact the admissions office?": "You can email admissions@university.edu or call +123456789.",
-}
-
-# Vectorize FAQ Questions
-faq_questions = list(faq_data.keys())
-vectorizer = TfidfVectorizer()
-faq_embeddings = vectorizer.fit_transform(faq_questions)
+# # Sample FAQ Data
+# faq_data = {
+#     "What courses are available?": "You can find a list of courses on our university website.",
+#     "What are the admission requirements?": "Admission requirements vary by course. Check the admissions page.",
+#     "How can I contact the admissions office?": "You can email admissions@university.edu or call +123456789.",
+# }
 
 
-# Training data for the classifier
-questions = [
-    "What courses are available?",
-    "What is the fee structure?",
-    "How can I apply?",
-    "Tell me about research opportunities.",
-    "What are the admission requirements?",
-    "How can I contact the admissions office?"
-]
-labels = [1, 0, 0, 0, 1, 1]  # 1 = FAQ, 0 = Non-FAQ
+# # Vectorize FAQ Questions
+# faq_questions = list(faq_data.keys())
+# vectorizer = TfidfVectorizer()
+# faq_embeddings = vectorizer.fit_transform(faq_questions)
 
-# Train the classifier
-question_embeddings = vectorizer.transform(questions)
-classifier = LogisticRegression()
-classifier.fit(question_embeddings, labels)
+
+# # Training data for the classifier
+# questions = [
+#     "What courses are available?",
+#     "What is the fee structure?",
+#     "How can I apply?",
+#     "Tell me about research opportunities.",
+#     "What are the admission requirements?",
+#     "How can I contact the admissions office?"
+# ]
+# labels = [1, 0, 0, 0, 1, 1]  # 1 = FAQ, 0 = Non-FAQ
+
+# # Train the classifier
+# question_embeddings = vectorizer.transform(questions)
+# classifier = LogisticRegression()
+# classifier.fit(question_embeddings, labels)
 
 
 # def handle_user_question(user_question):
-#     response = st.session_state.conversation({"input": user_question, "chat_history": []})
+#     # Classify the user's question
+#     user_question_embedding = vectorizer.transform([user_question])
+#     is_faq = classifier.predict(user_question_embedding)[0]
 
+#     if is_faq:
+#         # FAQ handling
+#         similarities = cosine_similarity(user_question_embedding, faq_embeddings).flatten()
+#         best_match_index = np.argmax(similarities)
+#         best_match_score = similarities[best_match_index]
 
+#         if best_match_score > 0.8:
+#             response_text = faq_data[faq_questions[best_match_index]]
+#         else:
+#             # response_text = "I couldn't find a matching FAQ. Please provide more details."
+#             response = st.session_state.conversation({"input": user_question, "chat_history": []})
+#             response_text = response['answer']
+
+#     else:
+#         # Non-FAQ handling using RAG pipeline
+#         response = st.session_state.conversation({"input": user_question, "chat_history": []})
+#         response_text = response['answer']
+        
+#     # Update chat history for Ques and Ans
 #     st.session_state.chat_history.extend(
 #         [
-#             HumanMessage(content=response['input']),
-#             AIMessage(content=response['answer']),
+#             HumanMessage(content=user_question),
+#             AIMessage(content=response_text),
 #         ]
 #     )
 
+#     print('st.session_state.chat_history', st.session_state.chat_history)
 
-#     # print('st.session_state.chat_history', st.session_state.chat_history)
-
-#     # Display the chat messages
 #     for i, msg in enumerate(st.session_state.chat_history):
 #         if i % 2 == 0:
 #             message(msg.content, is_user=True, key=str(i) + '_user', avatar_style="initials", seed="Kavita")
@@ -60,22 +80,45 @@ classifier.fit(question_embeddings, labels)
 #             message(msg.content, is_user=False, key=str(i), avatar_style="initials", seed="AI",)
 
 
+# Load the Excel file into a DataFrame
+df = pd.read_excel('ques_dup.xlsx')
+
+# Extract features
+questions = df['questions']
+answers = df['answers']  # Ensure the answers column is used
+lengths = df['lengths']
+labels = df['labels']
+
+# Vectorize questions
+vectorizer = TfidfVectorizer()
+question_embeddings = vectorizer.fit_transform(questions)
+
+# Combine question embeddings with lengths
+lengths = lengths.values.reshape(-1, 1)
+combined_features = np.hstack((question_embeddings.toarray(), lengths))
+
+# Train the classifier
+classifier = LogisticRegression()
+classifier.fit(combined_features, labels)
 
 def handle_user_question(user_question):
     # Classify the user's question
     user_question_embedding = vectorizer.transform([user_question])
-    is_faq = classifier.predict(user_question_embedding)[0]
+    user_question_length = np.array([[len(user_question)]])
+    user_combined_features = np.hstack((user_question_embedding.toarray(), user_question_length))
+    
+    is_faq = classifier.predict(user_combined_features)[0]
 
     if is_faq:
         # FAQ handling
-        similarities = cosine_similarity(user_question_embedding, faq_embeddings).flatten()
+        similarities = cosine_similarity(user_question_embedding, question_embeddings).flatten()
         best_match_index = np.argmax(similarities)
         best_match_score = similarities[best_match_index]
 
-        if best_match_score > 0.7:
-            response_text = faq_data[faq_questions[best_match_index]]
+        if best_match_score > 0.8:
+            response_text = answers.iloc[best_match_index]  # Fetch the corresponding answer
+            print(response_text)
         else:
-            # response_text = "I couldn't find a matching FAQ. Please provide more details."
             response = st.session_state.conversation({"input": user_question, "chat_history": []})
             response_text = response['answer']
 
@@ -84,7 +127,7 @@ def handle_user_question(user_question):
         response = st.session_state.conversation({"input": user_question, "chat_history": []})
         response_text = response['answer']
         
-    # Update chat history for non-FAQ
+    # Update chat history for Ques and Ans
     st.session_state.chat_history.extend(
         [
             HumanMessage(content=user_question),
@@ -92,7 +135,7 @@ def handle_user_question(user_question):
         ]
     )
 
-    # print('st.session_state.chat_history', st.session_state.chat_history)
+    print('st.session_state.chat_history', st.session_state.chat_history)
 
     for i, msg in enumerate(st.session_state.chat_history):
         if i % 2 == 0:
