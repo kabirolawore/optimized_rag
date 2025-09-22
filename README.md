@@ -29,8 +29,6 @@ OPENAI_API_KEY=your_api_key_here
 streamlit run app.py
 ```
 
-Open the link (default: http://localhost:8501) in your browser.
-
 ---
 
 ## Features
