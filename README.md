@@ -1,6 +1,6 @@
 # Optimized RAG – Quick Start
 
-This project is an **Optimized Retrieval-Augmented Generation (RAG) chatbot** built with Streamlit, LangChain, and FAISS. It lets you upload documents, embed them, and ask questions in a conversational interface powered by LLMs.
+This project is an **Optimized Retrieval-Augmented Generation (RAG) chatbot** built with Streamlit, LangChain, and FAISS. It lets you upload documents, embed them, and ask questions in a conversational interface powered by LLMs.It also includes evaluation methods for retrieval quality and conversational performance.
 
 ---
 
